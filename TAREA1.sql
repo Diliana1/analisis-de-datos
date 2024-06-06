@@ -1,13 +1,14 @@
 #NIVEL 1
+
+
+use transactions;
 select * from transactions.company;
 select* from transactions.transaction;
-
-
 # ejercicio 2/a
 -- Listado de los países que están realizando compras;
-select distinct company.country, transaction.declined
+select distinct company.country
 FROM transactions.company
-join transactions.transaction on company_id = transaction.company_id
+join transactions.transaction on company.id = transaction.company_id
 where transaction.declined = 0;
 
 #ejercicio 2/b
@@ -16,14 +17,17 @@ where transaction.declined = 0;
 
 select count(distinct company.country)
 FROM transactions.company
-join transactions.transaction on company_id = transaction.company_id;
+join transactions.transaction on company.id = transaction.company_id;
 
 #ejercicio 2/c
 #Identifica a la compañía con la mayor media de ventas;
-select company_id, avg(amount)
+select company_name,Round(avg(amount),2)
 FROM transactions.transaction
-group by company_id
-order by avg(amount) desc;
+join transactions.company on company.id = transaction.company_id
+where transaction.declined=0
+group by company.company_name
+order by avg(amount) desc
+limit 1
 
 #ejercicio3
 #Sin JOIN
@@ -39,7 +43,7 @@ WHERE company_id IN (
 
 #ejercicio3/b
 #Lista las empresas que han realizado transacciones por un amount superior a la media de todas las transacciones.
-
+use transactions;
 select company_name
 from transactions.company
 where id in (
@@ -54,14 +58,16 @@ where id in (
 
 select company_name
 from transactions.company
-where id not in ( select company_id
+where not exists ( select company_id
 		from transactions.transaction);
         
 #NIVEL II
 # Identifica los cinco días que se generó la mayor cantidad de ingresos en la empresa por ventas. Muestra la fecha de cada transacción junto con el total de las ventas.
-SELECT amount as monto, company_id, date(timestamp)
+SELECT  date(timestamp),round(sum(amount),2) as monto 
 from transactions.transaction
-order by monto desc
+where declined = 0
+group by date(timestamp)
+order by sum(amount) desc
 limit 5;
 
 #Ejercicio 2
@@ -69,6 +75,7 @@ limit 5;
 select round(avg(amount),2) as ventas, company.country
 from transactions.transaction
 join transactions.company ON company.id= transaction.company_id
+where transaction.declined = 0
 group by company.country 
 order by ventas desc;
 
@@ -88,7 +95,7 @@ from transactions.transaction
 join transactions.company ON company.id= transaction.company_id
 where company.country = (select company.country
 						from transactions.company
-						where company_name = 'enim condimentum ltd');
+						where company_name = 'Non Institute');
 
 #validando
 select *
@@ -99,13 +106,13 @@ where company_name = 'enim condimentum ltd';
 # Para ello, te piden la lista de todas las transacciones realizadas por empresas que están ubicadas en el mismo país que esta compañía.
 #Muestra el listado aplicando solo subconsultas.
 
-select amount, (select company_name from transactions.company where company_id= transactions.company.id)as empresa
+select amount,lat,credit_card_id,user_id, (select company_name from transactions.company where company_id= transactions.company.id)as empresa
 from transactions.transaction
 where company_id in ( select company.id
                       from transactions.company 
                       where  company.country = (select company.country
 						from transactions.company
-						where company_name = 'enim condimentum ltd') );
+						where company_name = 'Non Institute') );
                      
 	
   
@@ -118,18 +125,16 @@ where company_id in ( select company.id
 select company_name, phone,country,date(timestamp),amount
 from transactions.transaction
 join transactions.company ON company.id= transaction.company_id
-where (date(timestamp)='2021-04-29' or date(timestamp)='2021-06-20' or date(timestamp)= '2022-03-13')
-and amount BETWEEN 100.00 AND 200.00 ;
+where transaction.amount BETWEEN 100.00 AND 200.00 and (date(timestamp) in ('2021-04-29','2021-06-20' ,'2022-03-13') )
+order by amount desc;
+
+
 
 # Ejercicio 2
 # Necesitamos optimizar la asignación de los recursos y dependerá de la capacidad operativa que se requiera, por lo que te piden la información sobre la cantidad de transacciones que realizan las empresas,
 # pero el departamento de recursos humanos es exigente y quiere un listado de las empresas donde especifiques si tienen más de 4 o menos transacciones.
 
-select company_name, count(transaction.id) as contador
-from transactions.transaction
-join transactions.company ON company.id= transaction.company_id
-group by company_name 
-having contador <>4;
+
 
 SELECT company_name ,
 CASE
